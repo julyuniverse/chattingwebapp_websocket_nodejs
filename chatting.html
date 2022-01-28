@@ -51,7 +51,7 @@
         let name;
         let room;
         let connectionStatusBox = document.getElementById("connectionStatusBox");
-        const clearConnectionStatusBox = () => setTimeout(() => {
+        const clearConnectionStatusBox = () => setTimeout(() => { // 3초 뒤 connectionStatusBox 출력 빈 값 처리
             connectionStatusBox.innerText = "";
         }, 3000);
 
@@ -67,11 +67,10 @@
                     connectMessage(userData.userinfo.name, userData.message);
                 } else if (userData.type === "message") { // 메시지 보내기 시
                     showMessage(userData.userinfo.name, userData.message);
-                    document.getElementById("content").scrollTop = document.getElementById("content").scrollHeight;
+                    document.getElementById("content").scrollTop = document.getElementById("content").scrollHeight; // 메시지를 출력할 때마다 스크롤 최하단으로 설정
                 } else if (userData.type === "close") { // 종료 시
                     closeMessage(userData.userinfo.name, userData.message);
                 }
-
             }
         }
 
@@ -121,20 +120,19 @@
         }
 
         function showMessage(userName, message) { // 유저 메시지 노출
-            let messageBox = document.getElementById("messageBox");
-            messageBox.innerHTML += "<div style='word-break:break-all;'>" + userName + ": " + message + "</div>";
+            document.getElementById("messageBox").innerHTML += "<div style='word-break:break-all;'>" + userName + ": " + message + "</div>";
         }
 
         function connectMessage(userName, message) { // 최초 접속 메시지
             connectionStatusBox.innerHTML = "<div style='word-break:break-all;'>" + userName + "" + message + "</div>";
             clearConnectionStatusBox();
-            return clearTimeout(clearConnectionStatusBox);
+            return clearTimeout(clearConnectionStatusBox); // setTimeout 회수
         }
 
         function closeMessage(userName, message) { // 종료 메시지            
             connectionStatusBox.innerHTML = "<div style='word-break:break-all;'>" + userName + "" + message + "</div>";
             clearConnectionStatusBox();
-            return clearTimeout(clearConnectionStatusBox);
+            return clearTimeout(clearConnectionStatusBox); // setTimeout 회수
         }
     </script>
 </body>
