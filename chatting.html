@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatting App</title>
+</head>
+
+<body>
+    <div>
+        <span>
+            참가자 이름
+        </span>
+        <span>
+            <input type="text" id="name" />
+        </span>
+    </div>
+    <div>
+        <span>방 선택</span>
+        <select id="room">
+            <option value="">선택</option>
+            <option value="1">1번 방</option>
+            <option value="2">2번 방</option>
+            <option value="3">3번 방</option>
+            <option value="4">4번 방</option>
+        </select>
+    </div>
+
+    <div>
+        <button id="participation" onclick="onParticipation()">참가</button>
+    </div>
+
+    <div>
+        <div id="roomInfo"></div>
+    </div>
+
+    <div id="content" style="width: 100%; height: 600px; border: 1px solid #000000; overflow-y: scroll;">
+        <div id="connectionStatusBox" style="width: 100%"></div>
+        <div id="messageBox" style="width: 100%"></div>
+    </div>
+
+    <div>
+        <input type="text" id="message" />
+        <button onclick="onMessage()">보내기</button>
+    </div>
+
+    <script>
+        let ws;
+        let name;
+        let room;
+        let connectionStatusBox = document.getElementById("connectionStatusBox");
+        const clearConnectionStatusBox = () => setTimeout(() => {
+            connectionStatusBox.innerText = "";
+        }, 3000);
+
+        function init(userData) { // 소켓 생성
+            ws = new WebSocket("ws://localhost:8001");
+            ws.onopen = () => {
+                console.log("Connection opened.");
+                ws.send(JSON.stringify(userData)); // json으로 변환
+            }
+            ws.onmessage = ({ data }) => {
+                let userData = JSON.parse(data);
+                if (userData.type === "participation") { // 최초 접속
+                    connectMessage(userData.userinfo.name, userData.message);
+                } else if (userData.type === "message") { // 메시지 보내기 시
+                    showMessage(userData.userinfo.name, userData.message);
+                    document.getElementById("content").scrollTop = document.getElementById("content").scrollHeight;
+                } else if (userData.type === "close") { // 종료 시
+                    closeMessage(userData.userinfo.name, userData.message);
+                }
+
+            }
+        }
+
+        function onParticipation() { // 참가
+            if (document.getElementById("name").value === "") {
+                alert("이름을 입력해 주세요.");
+                return false;
+            } else if (document.getElementById("room").value === "") {
+                alert("방을 선택해 주세요.");
+                return false;
+            }
+            name = document.getElementById("name").value;
+            room = document.getElementById("room").value;
+            let userData = { type: "participation", userinfo: { name: name, room: room } };
+
+            init(userData);
+
+            document.getElementById("roomInfo").innerText = room + "번 방으로 참가";
+            document.getElementById("participation").setAttribute("onclick", "onClose()");
+            document.getElementById("participation").innerText = "종료";
+        }
+
+        function onClose() { // 참가 종료
+            ws.close();
+            document.getElementById("roomInfo").innerText = "";
+            document.getElementById("messageBox").innerText = "";
+            document.getElementById("participation").setAttribute("onclick", "onParticipation()");
+            document.getElementById("participation").innerText = "참가";
+        }
+
+        function onMessage() { // 메시지 전송
+            if (!ws) { // 소켓이 생성 전이라면
+                alert("참가 버튼을 먼저 눌러 주세요.");
+            } else {
+                if (ws.readyState === 1) { // 소켓이 열려 있고, 통신할 준비가 되어 있다면
+                    let message = document.getElementById("message").value;
+                    let userData = { type: "message", userinfo: { name: name, room: room }, message: message };
+                    ws.send(JSON.stringify(userData)); // json으로 변환
+                    document.getElementById("message").value = "";
+                } else if (ws.readyState === 3) { // 소켓이 닫혔거나 열수 없는 상태
+                    alert("참가 버튼을 먼저 눌러 주세요.");
+                    return false;
+                } else {
+                    alert("연결 중입니다. 잠시 후 다시 시도해 주세요.");
+                }
+            }
+        }
+
+        function showMessage(userName, message) { // 유저 메시지 노출
+            let messageBox = document.getElementById("messageBox");
+            messageBox.innerHTML += "<div style='word-break:break-all;'>" + userName + ": " + message + "</div>";
+        }
+
+        function connectMessage(userName, message) { // 최초 접속 메시지
+            connectionStatusBox.innerHTML = "<div style='word-break:break-all;'>" + userName + "" + message + "</div>";
+            clearConnectionStatusBox();
+            return clearTimeout(clearConnectionStatusBox);
+        }
+
+        function closeMessage(userName, message) { // 종료 메시지            
+            connectionStatusBox.innerHTML = "<div style='word-break:break-all;'>" + userName + "" + message + "</div>";
+            clearConnectionStatusBox();
+            return clearTimeout(clearConnectionStatusBox);
+        }
+    </script>
+</body>
+
+</html>
